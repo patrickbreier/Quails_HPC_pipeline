@@ -30,6 +30,7 @@ if __name__ == '__main__':
         for directory in dirs:
             if regex.match(directory):
                 INPUT_FOLDER = f"{input_path}{directory}"
+                print(f"{input_path}{directory}")
 
     try:
         INPUT_FOLDER

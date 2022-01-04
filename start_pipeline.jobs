@@ -4,6 +4,7 @@
 # This script starts the whole quail pipeline
 # TODO
 #  - make all things running for large data --> lazy loading (aicsimageio/tifffile)
+#  - write clean_up script that removes all mod files
 #  - write file for time resolution at the end (thing for TM as well)
 #  - write loops where I want to have options
 #  - think about the restoring of final hierarchy if not in TA mode
@@ -26,13 +27,13 @@ prj="/projects/Quails/"
 
 # all variables that have to be set before starting the pipeline
 # template_update
-number_of_tiles="120"
-number_of_timesteps="1"
+number_of_tiles="12"
+number_of_timesteps="28"  # actually its number of timesteps-1 because there is a step 0
 script_dir="${prj}/scripts/pipeline/"
 
 # image_conversion
-csv_dir="${prj}/data/20211106_60x/exp/"  # change!
-csv_name="20210216_memgfpQuails_AJ_488_CSU_current_" # filename without index and .vsi!
+csv_dir="${prj}/data/20210811_60x/adjust/"  # change!
+csv_name="20210216_memgfpQuails_AJ_488_CSU_60x_current_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
 N2V_model="${prj}/data/20211106_60x/model_first_long_training/" # "None" #either input path to trained N2V-model or input None in which case the data itself will be used to train a model point to folder that contains folder N2V
@@ -131,9 +132,8 @@ then
 elif [ ${proj_type} == "MAX" ]; then
   projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
-elif [ ${proj_type} == "LOCALZ" ]
-then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh # dependencies have to be figured out
+elif [ ${proj_type} == "LOCALZ" ]; then
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh) # dependencies have to be figured out
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 else
   echo "invalid projection type"
@@ -155,7 +155,7 @@ segmentation_job=$(echo "${segmentation}" | awk '{ print $NF }')
 
 # restore folder hierarchy
 # this is tailored for TA Mode
-sbatch --dependency=afterok:"${segmentation_job}" ${prj}/scripts/pipeline/restore_hierarchy.sh ${restore_dir}
+# sbatch --dependency=afterok:"${segmentation_job}" ${prj}/scripts/pipeline/restore_hierarchy.sh ${restore_dir}
 
 # start some PIV; can be done simultaneously to the segmentation
 # this is just future stuff. no need to prioritize

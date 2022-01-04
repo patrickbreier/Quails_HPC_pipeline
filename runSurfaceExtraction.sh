@@ -8,7 +8,7 @@
 #SBATCH --mem-per-cpu=1000
 #SBATCH --array 24,28 
 
-PRJ=/projects/project_jana
+PRJ=/projects/Quails
 
 vars="
    processType='current image' 

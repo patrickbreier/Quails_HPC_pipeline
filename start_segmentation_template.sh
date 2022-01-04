@@ -10,7 +10,7 @@
 #SBATCH --mail-type=None
 #SBATCH --output=/projects/Quails/scripts/output/slurm-segmentation_%A_%a.out
 #SBATCH --error=/projects/Quails/scripts/errors/slurm-segmentation_%A_%a.err
-#SBATCH --array=1-==timesteps==
+#SBATCH --array=0-==timesteps==
 
 # get arguments from master-script
 input_dir=${1}
@@ -23,11 +23,15 @@ eval "$(conda shell.bash hook)"
 conda activate epyseg
 module load cuda/11.2.2
 
+# wait 5s
+sleep 5s
+
 # move every file in separate folder
-cd "${input_dir}" || exit
+# somehow this failed
+cd "${input_dir}/timeseries/" || exit
 for x in ./*.tif; do
   mkdir "${x%.*}" && mv "$x" "${x%.*}"
 done
 
 # job submission; set input path behind the script call
-python /projects/Quails/scripts/pipeline/epyseg_nogui.py "${input_dir}" "${TA_mode}" "${cut_cells}" $(printf "%02d" "$SLURM_ARRAY_TASK_ID")  # change back to 3 digits!
+python /projects/Quails/scripts/pipeline/epyseg_nogui.py "${input_dir}" "${TA_mode}" "${cut_cells}" $(printf "%03d" "$SLURM_ARRAY_TASK_ID")

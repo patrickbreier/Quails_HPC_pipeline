@@ -33,7 +33,7 @@ export HDF5_USE_FILE_LOCKING='FALSE'
 # do the arrays work?
 if [ ${path_to_model} == None ]
 then
-  /projects/Quails/scripts/pipeline/predictN2V.py --baseDir=${path_to_folder}/../model/ --dataPath=${path_to_folder}/../${data}/ --fileName='tile_'$(printf "%02d" $SLURM_ARRAY_TASK_ID)'.tif' --output=${path_to_folder}/../${outdir}/ --dims=ZYX --tile=4
+  /projects/Quails/scripts/pipeline/predictN2V.py --baseDir=${path_to_folder}/../model/ --dataPath=${path_to_folder}/../${data}/ --fileName='tile_'$(printf "%02d" $SLURM_ARRAY_TASK_ID)'.tif' --output=${path_to_folder}/../${outdir}/ --dims=TZYX --tile=4
 else
-  /projects/Quails/scripts/pipeline/predictN2V.py --baseDir=${path_to_model}/ --dataPath=${path_to_folder}/../${data}/ --fileName='tile_'$(printf "%02d" $SLURM_ARRAY_TASK_ID)'.tif' --output=${path_to_folder}/../${outdir}/ --dims=ZYX --tile=4
+  /projects/Quails/scripts/pipeline/predictN2V.py --baseDir=${path_to_model}/ --dataPath=${path_to_folder}/../${data}/ --fileName='tile_'$(printf "%02d" $SLURM_ARRAY_TASK_ID)'.tif' --output=${path_to_folder}/../${outdir}/ --dims=TZYX --tile=4
 fi
