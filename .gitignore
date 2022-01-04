@@ -3,6 +3,7 @@
 runSurfaceExtraction.sh
 Wing2SurfaceExtraction_ND_v1.4.py
 main.py
+preprocessing.py
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,jupyternotebooks,python,macos,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,jupyternotebooks,python,macos,linux
