@@ -10,6 +10,6 @@
 parent_dir=${1}
 
 cd ${parent_dir} || exit
-mv **/Fused*.tif . # move FusedXXX.tif one folder up
+mv **/max_pp_tile*.tif . # move FusedXXX.tif one folder up
 find . -maxdepth 2 -mindepth 2 -type d -exec bash -c "cd '{}' && mv * ../ " \; # move handcorrection one folder up
 find . -maxdepth 2 -mindepth 1 -empty -type d -delete  # delete now empty directories

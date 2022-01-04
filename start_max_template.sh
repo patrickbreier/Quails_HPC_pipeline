@@ -14,7 +14,6 @@
 #this could be written in down in the line where it is actually called, but so it's more readable
 input_dir=${1}
 output_dir=${2}
-filename=${3}
 
 # set environment and load modules
 eval "$(conda shell.bash hook)"
