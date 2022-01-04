@@ -15,4 +15,4 @@ filename="$2"
 eval "$(conda shell.bash hook)"
 conda activate quail
 
-/projects/Quails/scripts/pipeline/copy_to_png.py ${filepath} ${filename} $(printf "%03d" $SLURM_ARRAY_TASK_ID)
+/projects/Quails/scripts/pipeline/copy_png.py ${filepath} ${filename} $(printf "%03d" $SLURM_ARRAY_TASK_ID)
