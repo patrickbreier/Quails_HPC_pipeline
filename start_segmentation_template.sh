@@ -26,12 +26,7 @@ module load cuda/11.2.2
 # wait 5s
 sleep 5s
 
-# move every file in separate folder
-# somehow this failed
-cd "${input_dir}/timeseries/" || exit
-for x in ./*.tif; do
-  mkdir "${x%.*}" && mv "$x" "${x%.*}"
-done
+# reordering is now done at the end of stitching
 
 # job submission; set input path behind the script call
 python /projects/Quails/scripts/pipeline/epyseg_nogui.py "${input_dir}" "${TA_mode}" "${cut_cells}" $(printf "%03d" "$SLURM_ARRAY_TASK_ID")

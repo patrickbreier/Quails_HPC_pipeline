@@ -30,7 +30,6 @@ if __name__ == '__main__':
         for directory in dirs:
             if regex.match(directory):
                 INPUT_FOLDER = f"{input_path}{directory}"
-                print(f"{input_path}{directory}")
 
     try:
         INPUT_FOLDER
@@ -38,7 +37,7 @@ if __name__ == '__main__':
         print("Could not find input file")
         exit(1)
     else:
-        print("file found")
+        print(f"found file {INPUT_FOLDER}")
 
     EPYSEG_PRETRAINING = 'Linknet-vgg16-sigmoid-v2'  # or 'Linknet-vgg16-sigmoid' for v1
     SIZE_FILTER = cut_cells  # None #100 # set to 100 to get rid of cells having pixel area < 100 pixels

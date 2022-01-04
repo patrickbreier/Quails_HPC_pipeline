@@ -27,3 +27,12 @@ conda activate epyseg
 
 # save as timeseries
 /projects/Quails/scripts/pipeline/save_as_timeseries.py ${output_dir} "Fused"
+
+sleep 20s
+
+# move every file in separate folder
+# somehow this failed
+cd "${output_dir}/timeseries/" || exit
+for x in ./*.tif; do
+  mkdir "${x%.*}" && mv "$x" "${x%.*}"
+done
