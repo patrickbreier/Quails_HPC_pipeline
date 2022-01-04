@@ -15,21 +15,23 @@
 
 
 # look in dir, list the files and sorted by date and take the first one (use grep to look into this)
-
+# to make it file name insensitive
 
 prj="/projects/Quails/"
 
-# all variables that have to be set before starting the pipeline
 
+########################################################################################################################
+#                                     Please make your changes here!                                                   #
+########################################################################################################################
+
+# all variables that have to be set before starting the pipeline
 # template_update
-number_of_tiles="1"
+number_of_tiles="120"
 number_of_timesteps="1"
 script_dir="${prj}/scripts/pipeline/"
 
-
-
 # image_conversion
-csv_dir="${prj}/data/test_workflow/only_clahe/set3/raw/"  # change!
+csv_dir="${prj}/data/20211106_60x/exp/"  # change!
 csv_name="20210216_memgfpQuails_AJ_488_CSU_current_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
@@ -52,27 +54,27 @@ proj_out_dir="${csv_dir}/../projected/" # doesnt have to set since it is determi
 proj_name="pp_tile_"
 
 # Stitching
-#tiles_x="3"
-#tiles_y="4"
-#if [ ${proj_type} == "MAX" ]
-#then
-#  stitch_name_pattern="max_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
-#elif [ ${proj_type} == "DPJ" ]; then
-#  stitch_name_pattern="proj_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
-#else
-#  echo "invalid projection type"
-#  exit 1
-#fi
-#stitch_in_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
-#stitch_out_dir="${csv_dir}/../stitched/" # doesnt have to set since it is determined by earlier steps in the pipeline?
+tiles_x="3"
+tiles_y="4"
+if [ ${proj_type} == "MAX" ]
+then
+  stitch_name_pattern="max_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
+elif [ ${proj_type} == "DPJ" ]; then
+  stitch_name_pattern="proj_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
+else
+  echo "invalid projection type"
+  exit 1
+fi
+stitch_in_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
+stitch_out_dir="${csv_dir}/../stitched/" # doesnt have to set since it is determined by earlier steps in the pipeline?
 
 # Segmentation
-seg_in_dir="${csv_dir}/../projected/"  # change to stitched again
+seg_in_dir="${csv_dir}/../stitched/"
 TA_mode="True" # False
 cut_cells="None"
 
 # restoring original folder structure
-restore_dir="${csv_dir}/../projected/"  # change to stitched/timeseries/ again
+restore_dir="${csv_dir}/../stitched/timeseries/"
 
 ############################################# Starting Jobs ############################################################
 
@@ -85,19 +87,19 @@ sleep 5s
 # first job has no dependencies
 # start image conversion (array)
 # potentially create a for loop that iterates over all tiles to process single/chucks of slices
-#mkdir ${csv_dir}/../raw # create dir to save the data in a dir of same hierarchy as csv_dir
-#image_conversion=$(sbatch --dependency=afterok:"${template_update_job}" ${prj}/scripts/pipeline/start_conversion_mod.sh ${csv_dir} ${csv_name})
-#image_conversion_job=$(echo "${image_conversion}" | awk '{ print $NF }')
+mkdir ${csv_dir}/../raw # create dir to save the data in a dir of same hierarchy as csv_dir
+image_conversion=$(sbatch --dependency=afterok:"${template_update_job}" ${prj}/scripts/pipeline/start_conversion_mod.sh ${csv_dir} ${csv_name})
+image_conversion_job=$(echo "${image_conversion}" | awk '{ print $NF }')
 
 # training for denoising starts only if needed, otherwise use existing model in specified directory
 # training can only start once the array job for image-conversion has finished
 # training is a single job
-#if [ ${N2V_model} == "None" ]
-#then
-#  mkdir ${csv_dir}/../model
-#  training_N2V=$(sbatch --dependency=afterok:"${image_conversion_job}" ${prj}/scripts/trainN2V.sh ${csv_dir} ${number_epochs} ${steps_per_epoch}) # tifs must be stored in a folder called raw inside this directory
-#  training_N2V_job=$(echo "${training_N2V}" | awk '{ print $NF }')
-#fi
+if [ ${N2V_model} == "None" ]
+then
+  mkdir ${csv_dir}/../model
+  training_N2V=$(sbatch --dependency=afterok:"${image_conversion_job}" ${prj}/scripts/trainN2V.sh ${csv_dir} ${number_epochs} ${steps_per_epoch}) # tifs must be stored in a folder called raw inside this directory
+  training_N2V_job=$(echo "${training_N2V}" | awk '{ print $NF }')
+fi
 
 # prediction can only start once the training has finished or, if specified, once the image-conversion is done
 # prediction is another array
@@ -108,7 +110,7 @@ then
   prediction_N2V=$(sbatch --dependency=afterok:"${training_N2V_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})
   prediction_N2V_job=$(echo "${prediction_N2V}" | awk '{ print $NF }')
 else
-  prediction_N2V=$(sbatch --dependency=afterok:"${template_update_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})  # change dependency back
+  prediction_N2V=$(sbatch --dependency=afterok:"${image_conversion_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})
   prediction_N2V_job=$(echo "${prediction_N2V}" | awk '{ print $NF }')
 fi
 
@@ -124,24 +126,31 @@ preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
 mkdir ${csv_dir}/../projected
 if [ ${proj_type} == "DPJ" ]
 then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "MAX" ]; then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})  # change dependency back
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
+elif [ ${proj_type} == "LOCALZ" ]
+then
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh # dependencies have to be figured out
+  projection_job=$(echo "${projection}" | awk '{ print $NF }')
+else
+  echo "invalid projection type"
+  exit 1
 fi
 
 # stitching; do this with fiji
 # start after projections are done
-#mkdir ${csv_dir}/../stitched
-#mkdir ${csv_dir}/../stitched/timeseries
-#stitching=$(sbatch --dependency=afterok:"${projection_job}" ${prj}/scripts/pipeline/start_stitching.sh ${stitch_in_dir} ${stitch_out_dir} ${stitch_name_pattern} ${tiles_x} ${tiles_y})
-#stitching_job=$(echo "${stitching}" | awk '{ print $NF }')
+mkdir ${csv_dir}/../stitched
+mkdir ${csv_dir}/../stitched/timeseries
+stitching=$(sbatch --dependency=afterok:"${projection_job}" ${prj}/scripts/pipeline/start_stitching.sh ${stitch_in_dir} ${stitch_out_dir} ${stitch_name_pattern} ${tiles_x} ${tiles_y})
+stitching_job=$(echo "${stitching}" | awk '{ print $NF }')
 
 # start the segmentation; should be parallelized for every single  image, otherwise this might take forever
 # start once the stitching is done
 # no subshell needed, since no other job is depending on it
-segmentation=$(sbatch --dependency=afterok:"${projection_job}" ${prj}/scripts/pipeline/start_segmentation_mod.sh ${seg_in_dir} ${TA_mode} ${cut_cells})  # ${number_of_timesteps} #segmentation input should be clear from earlier steps. still pass it?
+segmentation=$(sbatch --dependency=afterok:"${stitching_job}" ${prj}/scripts/pipeline/start_segmentation_mod.sh ${seg_in_dir} ${TA_mode} ${cut_cells})  # ${number_of_timesteps} #segmentation input should be clear from earlier steps. still pass it?
 segmentation_job=$(echo "${segmentation}" | awk '{ print $NF }')
 
 # restore folder hierarchy

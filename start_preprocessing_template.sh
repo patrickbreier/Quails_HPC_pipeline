@@ -6,7 +6,7 @@
 #SBATCH --job-name=preprocessing-%A_%a
 #SBATCH --time=0-10:00:00
 #SBATCH --mem-per-cpu=75000
-#SBATCH --array=1-==number_of_tiles==   # how can I make this parameter be set by another script?
+#SBATCH --array=1-==number_of_tiles==
 
 in_dir=${1}
 out_dir=${2}

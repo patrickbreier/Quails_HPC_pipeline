@@ -5,8 +5,9 @@ import numpy as np
 from skimage import io
 from aicsimageio.writers import OmeTiffWriter
 
-input_dir = sys.argv[1]   # make bash script create the folder to put the projections in
-save_dir = sys.argv[2]  # this variable has a meaning in the package not only for "transfer"
+# get arguments from bash script
+input_dir = sys.argv[1]
+save_dir = sys.argv[2]
 file_number = sys.argv[3]
 file_name = sys.argv[4]
 

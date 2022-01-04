@@ -8,12 +8,12 @@
 #SBATCH --mail-type=None
 #SBATCH --output=/projects/Quails/scripts/output/slurm-projection_%j.out
 #SBATCH --error=/projects/Quails/scripts/errors/slurm-projection_%j.err
-#SBATCH --array=1-==number_of_tiles==  # how can I make this parameter be set by another script?
+#SBATCH --array=1-==number_of_tiles==
 
 
 #this could be written in down in the line where it is actually called, but so it's more readable
 input_dir=${1}
-output_dir=${2} ####HOW CAN THIS BE USED?
+output_dir=${2}
 filename=${3}
 
 # set environment and load modules
