@@ -126,14 +126,14 @@ preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
 mkdir ${csv_dir}/../projected
 if [ ${proj_type} == "DPJ" ]
 then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "MAX" ]; then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "LOCALZ" ]
 then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh # dependencies have to be figured out
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh # dependencies have to be figured out
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 else
   echo "invalid projection type"

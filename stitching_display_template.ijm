@@ -1,3 +1,3 @@
 // arguments get parsed by the script alter_fiji_macro.py
 run("Grid/Collection stitching", "type=[Grid: snake by rows] order=[Right & Down                ] grid_size_x=tiles_x  grid_size_y=tiles_y tile_overlap=10 first_file_index_i=1 directory=input_directory file_names=name_pattern output_textfile_name=TileConfiguration.txt fusion_method=[Linear Blending] regression_threshold=0.30 max/avg_displacement_threshold=2.50 absolute_displacement_threshold=3.50 compute_overlap ignore_z_stage computation_parameters=[Save computation time (but use more RAM)] image_output=[Fuse and display]");
-saveAs("Tiff", "output_directory" + "Fused.tif");
+saveAs("Tiff", "output_directory" + "Fused_.tif");
