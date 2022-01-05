@@ -31,7 +31,7 @@ number_of_timesteps="1"
 script_dir="${prj}/scripts/pipeline/"
 
 # image_conversion
-csv_dir="${prj}/data/test_workflow/only_bg_subtr/set5/raw/"  # change!
+csv_dir="${prj}/data/test_workflow/normal/set5/raw/"  # change!
 #csv_name="tile_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
