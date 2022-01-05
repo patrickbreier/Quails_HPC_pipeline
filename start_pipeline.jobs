@@ -31,16 +31,16 @@ number_of_timesteps="1"
 script_dir="${prj}/scripts/pipeline/"
 
 # image_conversion
-csv_dir="${prj}/data/test_workflow/no_n2v/set5/raw/"  # change!
+csv_dir="${prj}/data/test_workflow/only_bg_subtr/set5/raw/"  # change!
 #csv_name="tile_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
-#N2V_model="${prj}/data/20211106_60x/model_first_long_training/" # "None" #either input path to trained N2V-model or input None in which case the data itself will be used to train a model point to folder that contains folder N2V
+N2V_model="${prj}/data/20211106_60x/model_first_long_training/" # "None" #either input path to trained N2V-model or input None in which case the data itself will be used to train a model point to folder that contains folder N2V
 #number_epochs="5"  # 100 is default; doesn't matter if model is set
 #steps_per_epoch="5"  # 400 is default; doesn't matter if model is set
 
 # preprocessing
-pp_in_dir="${csv_dir}/../raw/"
+pp_in_dir="${csv_dir}/../clean/"
 pp_out_dir="${csv_dir}/../preprocessed/"
 pp_in_name="tile_"  # get this reported from finished job!
 rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
@@ -106,21 +106,21 @@ sleep 5s
 # prediction can only start once the training has finished or, if specified, once the image-conversion is done
 # prediction is another array
 # will write output to a folder called clean
-#mkdir ${csv_dir}/../clean
-#if [ ${N2V_model} == "None" ]
-#then
-#  prediction_N2V=$(sbatch --dependency=afterok:"${training_N2V_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})
-#  prediction_N2V_job=$(echo "${prediction_N2V}" | awk '{ print $NF }')
-#else
-#  prediction_N2V=$(sbatch --dependency=afterok:"${image_conversion_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})
-#  prediction_N2V_job=$(echo "${prediction_N2V}" | awk '{ print $NF }')
-#fi
+mkdir ${csv_dir}/../clean
+if [ ${N2V_model} == "None" ]
+then
+  prediction_N2V=$(sbatch --dependency=afterok:"${training_N2V_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})
+  prediction_N2V_job=$(echo "${prediction_N2V}" | awk '{ print $NF }')
+else
+  prediction_N2V=$(sbatch --dependency=afterok:"${template_update_job}" ${prj}/scripts/pipeline/predictN2V_mod.sh ${csv_dir} ${N2V_model})
+  prediction_N2V_job=$(echo "${prediction_N2V}" | awk '{ print $NF }')
+fi
 
 # after the prediction, some image manipulation will be done
 # start as array
 # what to parse here? a lot of parameters could be specified] by the earlier pipeline
 mkdir ${csv_dir}/../preprocessed
-preprocessing=$(sbatch --dependency=afterok:"${template_update_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size})
+preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size})
 preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
 
 # start the projection, can be parallelized for every single image if needed, otherwise for every tile?
