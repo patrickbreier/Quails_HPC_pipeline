@@ -21,10 +21,10 @@ input_dir=${2}
 output_dir=${3}
 filename=${4}
 
-
 # set environment and load modules
 eval "$(conda shell.bash hook)"
 conda activate dpj
 module load cuda/11.2.2
+
 # start projection
 /projects/Quails/scripts/pipeline/do_deepprojection.py ${path_to_model} ${input_dir} ${output_dir} $(printf "%02d" $SLURM_ARRAY_TASK_ID) ${filename}

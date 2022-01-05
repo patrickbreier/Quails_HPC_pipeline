@@ -31,13 +31,13 @@ number_of_timesteps="1"
 script_dir="${prj}/scripts/pipeline/"
 
 # image_conversion
-csv_dir="${prj}/data/test_workflow/no_pp/set3/"  # change!
-csv_name="tile_" # filename without index and .vsi!
+csv_dir="${prj}/data/test_workflow/no_pp/set5/"  # change!
+#csv_name="tile_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
 N2V_model="${prj}/data/20211106_60x/model_first_long_training/" # "None" #either input path to trained N2V-model or input None in which case the data itself will be used to train a model point to folder that contains folder N2V
-number_epochs="5"  # 100 is default; doesn't matter if model is set
-steps_per_epoch="5"  # 400 is default; doesn't matter if model is set
+#number_epochs="5"  # 100 is default; doesn't matter if model is set
+#steps_per_epoch="5"  # 400 is default; doesn't matter if model is set
 
 # preprocessing
 #pp_in_dir="${csv_dir}/../clean/"
@@ -75,6 +75,9 @@ cut_cells="None"
 
 # restoring original folder structure
 restore_dir="${csv_dir}/../projected/"
+
+#cleanup
+cleanup_dir="${script_dir}"
 
 ############################################# Starting Jobs ############################################################
 
@@ -129,11 +132,11 @@ then
   projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "MAX" ]; then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir}
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "LOCALZ" ]
 then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh # dependencies have to be figured out
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh) # dependencies have to be figured out
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 else
   echo "invalid projection type"
@@ -150,19 +153,20 @@ fi
 # start the segmentation; should be parallelized for every single  image, otherwise this might take forever
 # start once the stitching is done
 # no subshell needed, since no other job is depending on it
-segmentation=$(sbatch --dependency=afterok:"${projection}" ${prj}/scripts/pipeline/start_segmentation_mod.sh ${seg_in_dir} ${TA_mode} ${cut_cells})  # ${number_of_timesteps} #segmentation input should be clear from earlier steps. still pass it?
+segmentation=$(sbatch --dependency=afterok:"${projection_job}" ${prj}/scripts/pipeline/start_segmentation_mod.sh ${seg_in_dir} ${TA_mode} ${cut_cells})  # ${number_of_timesteps} #segmentation input should be clear from earlier steps. still pass it?
 segmentation_job=$(echo "${segmentation}" | awk '{ print $NF }')
 
 # restore folder hierarchy
 # this is tailored for TA Mode
-sbatch --dependency=afterok:"${segmentation_job}" ${prj}/scripts/pipeline/restore_hierarchy.sh ${restore_dir}
+restore=$(sbatch --dependency=afterok:"${segmentation_job}" ${prj}/scripts/pipeline/restore_hierarchy.sh ${restore_dir})
+restore_job=$(echo "${restore}" | awk '{ print $NF }')
 
 # start some PIV; can be done simultaneously to the segmentation
 # this is just future stuff. no need to prioritize
 # piv=$(sbatch --dependency=afterok:${stitching} start_piv.sh)
 
 # remove the mod_scripts
-#rm ${prj}/scripts/pipeline/*_mod
+sbatch --dependency=afterok:"${restore_job}" ${script_dir}/cleanup.sh ${cleanup_dir}
 
 # show dependencies in squeue output after 5 seconds
 sleep 5s
