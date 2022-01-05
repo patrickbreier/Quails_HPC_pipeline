@@ -4,8 +4,6 @@
 # This script starts the whole quail pipeline
 # TODO
 #  - make all things running for large data --> lazy loading (aicsimageio/tifffile)
-#  - write clean_up script that removes all mod files
-#  - write file that converts Fused_XXX.tif in original.png for tissue miner
 #  - write file for time resolution at the end (thing for TM as well)
 #  - write loops where I want to have options
 #  - think about the restoring of final hierarchy if not in TA mode
@@ -177,7 +175,6 @@ copy_job=$(echo "${copying}" | awk '{ print $NF }')
 
 # remove the mod_scripts
 sbatch --dependency=afterok:"${copy_job}" ${script_dir}/cleanup.sh ${cleanup_dir}
-#rm ${prj}/scripts/pipeline/*_mod
 
 # show dependencies in squeue output after 5 seconds
 sleep 5s

@@ -12,5 +12,5 @@ for ( f=1; f<=frames; f++ ) {
   }
 }
 
-// run("Subtract Background...", "rolling=rb_radius stack");
+run("Subtract Background...", "rolling=rb_radius stack");
 saveAs("Tiff", "out_dir" + "pp_" + "in_file" + "image_number.tif");
