@@ -5,6 +5,7 @@
 # TODO
 #  - make all things running for large data --> lazy loading (aicsimageio/tifffile)
 #  - write file for time resolution at the end (thing for TM as well)
+#  - write file to save as timeseries for mincost z projection
 #  - write loops where I want to have options
 #  - think about the restoring of final hierarchy if not in TA mode
 #  - scripts to be written
@@ -45,6 +46,9 @@ pp_out_dir="${csv_dir}/../preprocessed/"
 pp_in_name="tile_"  # get this reported from finished job!
 rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
 block_size="15"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
+cl_slope="2"
+rescale_xy="0.3"
+delta_z="1"
 
 # Projection
 proj_type="MAX" # MAX or DPJ
@@ -52,6 +56,12 @@ path_to_proj_model="${prj}/DeepProjection_git/trained_networks/20211109_dorsal_c
 proj_in_dir="${csv_dir}/../preprocessed/" # doesnt have to set since it is determined by earlier steps in the pipeline? --> hot to make earlier scripts set it?  trying to use 4dtsack version
 proj_out_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
 proj_name="pp_tile_"
+# there is different variables for mincost proj because it cant handle hyperstacks
+min_proj_in_dir=""
+min_proj_in_name=""
+min_proj_out_dir=""
+
+
 
 # Stitching
 tiles_x="3"
@@ -139,8 +149,8 @@ then
 elif [ ${proj_type} == "MAX" ]; then
   projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
-elif [ ${proj_type} == "LOCALZ" ]; then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh) # dependencies have to be figured out
+elif [ ${proj_type} == "MINCOST" ]; then
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_mincost_projection_mod.sh) ${min_proj_in_dir} ${min_proj_in_name} ${min_proj_out_dir}  ${rb_radius} ${cl_slope} ${rescale_xy} ${delta_z} # dependencies have to be figured out
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 else
   echo "invalid projection type"
