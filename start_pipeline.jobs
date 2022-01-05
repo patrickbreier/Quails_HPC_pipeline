@@ -31,7 +31,7 @@ number_of_timesteps="1"
 script_dir="${prj}/scripts/pipeline/"
 
 # image_conversion
-csv_dir="${prj}/data/test_workflow/normal/set5/raw/"  # change!
+csv_dir="${prj}/data/test_workflow/rb10cl1.5/set3/raw/"  # change!
 #csv_name="tile_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
@@ -41,16 +41,17 @@ N2V_model="${prj}/data/20211106_60x/model_first_long_training/" # "None" #either
 
 # preprocessing
 pp_in_dir="${csv_dir}/../clean/"
-pp_out_dir="${csv_dir}/../preprocessed/"
+pp_out_dir="${csv_dir}/../projected/"
 pp_in_name="tile_"  # get this reported from finished job!
 rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
-block_size="15"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
+block_size="50"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
+clahe_slope="1.5"
 
 # Projection
-proj_type="MAX" # MAX or DPJ
-path_to_proj_model="${prj}/DeepProjection_git/trained_networks/20211109_dorsal_closure.pth" # use this as long as there is no self_trained modelsqueue
-proj_in_dir="${csv_dir}/../preprocessed/" # doesnt have to set since it is determined by earlier steps in the pipeline? --> hot to make earlier scripts set it?  trying to use 4dtsack version
-proj_out_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
+#proj_type="MAX" # MAX or DPJ
+#path_to_proj_model="${prj}/DeepProjection_git/trained_networks/20211109_dorsal_closure.pth" # use this as long as there is no self_trained modelsqueue
+#proj_in_dir="${csv_dir}/../preprocessed/" # doesnt have to set since it is determined by earlier steps in the pipeline? --> hot to make earlier scripts set it?  trying to use 4dtsack version
+#proj_out_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
 
 # Stitching
 #tiles_x="3"
@@ -74,6 +75,11 @@ cut_cells="None"
 
 # restoring original folder structure
 restore_dir="${csv_dir}/../projected/"
+
+# get invertd roi only file
+roi_file="/projects/Quails/data/test_workflow/set3/benchmark_test_workflow_tissue.roi"
+roi_in_dir="${csv_dir}/../projected/max_pp_tile_01/"
+roi_in_file="handCorrection.tif"
 
 #directory in which to remove the mod files
 cleanup_dir=${script_dir}
@@ -119,28 +125,28 @@ fi
 # after the prediction, some image manipulation will be done
 # start as array
 # what to parse here? a lot of parameters could be specified] by the earlier pipeline
-mkdir ${csv_dir}/../preprocessed
-preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size})
+mkdir ${csv_dir}/../projected
+preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size} ${clahe_slope})
 preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
 
 # start the projection, can be parallelized for every single image if needed, otherwise for every tile?
 # start once preprocessing is done
-mkdir ${csv_dir}/../projected
-if [ ${proj_type} == "DPJ" ]
-then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
-  projection_job=$(echo "${projection}" | awk '{ print $NF }')
-elif [ ${proj_type} == "MAX" ]; then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir})
-  projection_job=$(echo "${projection}" | awk '{ print $NF }')
-elif [ ${proj_type} == "LOCALZ" ]
-then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh) # dependencies have to be figured out
-  projection_job=$(echo "${projection}" | awk '{ print $NF }')
-else
-  echo "invalid projection type"
-  exit 1
-fi
+#mkdir ${csv_dir}/../projected
+#if [ ${proj_type} == "DPJ" ]
+#then
+#  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
+#  projection_job=$(echo "${projection}" | awk '{ print $NF }')
+#elif [ ${proj_type} == "MAX" ]; then
+#  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir})
+#  projection_job=$(echo "${projection}" | awk '{ print $NF }')
+#elif [ ${proj_type} == "LOCALZ" ]
+#then
+#  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_localz_projection_mod.sh) # dependencies have to be figured out
+#  projection_job=$(echo "${projection}" | awk '{ print $NF }')
+#else
+#  echo "invalid projection type"
+#  exit 1
+#fi
 
 # stitching; do this with fiji
 # start after projections are done
@@ -152,7 +158,7 @@ fi
 # start the segmentation; should be parallelized for every single  image, otherwise this might take forever
 # start once the stitching is done
 # no subshell needed, since no other job is depending on it
-segmentation=$(sbatch --dependency=afterok:"${projection_job}" ${prj}/scripts/pipeline/start_segmentation_mod.sh ${seg_in_dir} ${TA_mode} ${cut_cells})  # ${number_of_timesteps} #segmentation input should be clear from earlier steps. still pass it?
+segmentation=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_segmentation_mod.sh ${seg_in_dir} ${TA_mode} ${cut_cells})  # ${number_of_timesteps} #segmentation input should be clear from earlier steps. still pass it?
 segmentation_job=$(echo "${segmentation}" | awk '{ print $NF }')
 
 # restore folder hierarchy
@@ -164,8 +170,13 @@ restore_job=$(echo "${restore}" | awk '{ print $NF }')
 # this is just future stuff. no need to prioritize
 # piv=$(sbatch --dependency=afterok:${stitching} start_piv.sh)
 
+roi_and_invert=$(sbatch --dependency=afterok:"${restore_job}" ${prj}/scripts/pipeline/start_roi_and_invert.sh ${roi_in_dir} ${roi_in_file} ${roi_file})
+roi_and_invert_job=$(echo "${roi_and_invert}" | awk '{ print $NF }')
+
 # remove the mod_scripts
-sbatch --dependency=afterok:"${restore_job}" ${script_dir}/cleanup.sh ${cleanup_dir}
+#sbatch --dependency=afterok:"${roi_and_invert_job}" ${script_dir}/cleanup.sh ${cleanup_dir}
+
+
 
 # show dependencies in squeue output after 5 seconds
 sleep 5s

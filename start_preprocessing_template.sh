@@ -13,11 +13,12 @@ out_dir=${2}
 filename=${3}
 rb_radius=${4}
 block_size=${5}
+clahe_slope=${6}
 
 eval "$(conda shell.bash hook)"
 conda activate quail
 
-/projects/Quails/scripts/pipeline/alter_pp_macro.py ${in_dir} ${out_dir} ${filename} ${rb_radius} ${block_size} $(printf "%02d" $SLURM_ARRAY_TASK_ID)
+/projects/Quails/scripts/pipeline/alter_pp_macro.py ${in_dir} ${out_dir} ${filename} ${rb_radius} ${block_size} $(printf "%02d" $SLURM_ARRAY_TASK_ID) ${clahe_slope}
 
 sleep 5s
 
