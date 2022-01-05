@@ -6,7 +6,7 @@
 #SBATCH --job-name=copy_png-%A_%a
 #SBATCH --time=0-02:00:00
 #SBATCH --mem-per-cpu=60000
-#SBATCH --array=0-==number_of_timesteps=  # will be modified by update_templates.py
+#SBATCH --array=0-==timesteps==  # will be modified by update_templates.py
 
 # get filepath, filename, number of files from console input
 filepath="$1"
