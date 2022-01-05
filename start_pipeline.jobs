@@ -75,6 +75,9 @@ cut_cells="None"
 # restoring original folder structure
 restore_dir="${csv_dir}/../projected/"
 
+#directory in which to remove the mod files
+cleanup_dir=${script_dir}
+
 ############################################# Starting Jobs ############################################################
 
 # update all templates
