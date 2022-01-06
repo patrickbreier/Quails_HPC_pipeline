@@ -5,7 +5,7 @@
 #SBATCH --error=/projects/Quails/scripts/errors/slurm-preprocessing-%A_%a.err
 #SBATCH --job-name=preprocessing-%A_%a
 #SBATCH --time=0-10:00:00
-#SBATCH --mem-per-cpu=75000
+#SBATCH --mem-per-cpu=5000
 #SBATCH --array=1-==number_of_tiles==
 
 in_dir=${1}

@@ -5,7 +5,7 @@
 #SBATCH --error=/projects/Quails/scripts/errors/slurm-roi_invert-%j.err
 #SBATCH --job-name=roi_invert-%j
 #SBATCH --time=0-0:10:00
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem-per-cpu=500
 
 in_dir=${1}
 in_name=${2}

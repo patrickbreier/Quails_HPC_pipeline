@@ -4,7 +4,7 @@
 # Check what options you need here!
 #SBATCH --job-name N2V_predict
 #SBATCH --time 1-00:00:00
-#SBATCH --mem-per-cpu 60000
+#SBATCH --mem-per-cpu 6000
 #SBATCH --gres=gpu:1
 #SBATCH --partition gpu
 #SBATCH --mail-user pbreier@mpi-cbg.de
