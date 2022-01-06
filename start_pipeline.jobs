@@ -28,12 +28,12 @@ prj="/projects/Quails/"
 # all variables that have to be set before starting the pipeline
 # template_update
 number_of_tiles="12"
-number_of_timesteps="28"  # actually its number of timesteps-1 because there is a step 0
+number_of_timesteps="7"  # actually its number of timesteps-1 because there is a step 0
 script_dir="${prj}/scripts/pipeline/"
 
 # image_conversion
-csv_dir="${prj}/data/20210811_60x/adjust/"  # change!
-csv_name="20210216_memgfpQuails_AJ_488_CSU_60x_current_" # filename without index and .vsi!
+csv_dir="${prj}/data/20211106_60x/exp/"  # change!
+csv_name="20210216_memgfpQuails_AJ_488_CSU_current_" # filename without index and .vsi!
 
 # N2V; if needed add learning rate and model-depth
 N2V_model="${prj}/data/20211106_60x/model_first_long_training/" # "None" #either input path to trained N2V-model or input None in which case the data itself will be used to train a model point to folder that contains folder N2V
@@ -41,25 +41,27 @@ number_epochs="5"  # 100 is default; doesn't matter if model is set
 steps_per_epoch="5"  # 400 is default; doesn't matter if model is set
 
 # preprocessing
-pp_in_dir="${csv_dir}/../clean/"
-pp_out_dir="${csv_dir}/../preprocessed/"
-pp_in_name="tile_"  # get this reported from finished job!
-rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
-block_size="15"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
-cl_slope="2"
-rescale_xy="0.3"
-delta_z="1"
+# commented out for performance reasons
+#pp_in_dir="${csv_dir}/../clean/"
+#pp_out_dir="${csv_dir}/../preprocessed/"
+#pp_in_name="tile_"  # get this reported from finished job!
+#rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
+#block_size="15"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
+#cl_slope="3"
+
 
 # Projection
 proj_type="MAX" # MAX or DPJ
 path_to_proj_model="${prj}/DeepProjection_git/trained_networks/20211109_dorsal_closure.pth" # use this as long as there is no self_trained modelsqueue
-proj_in_dir="${csv_dir}/../preprocessed/" # doesnt have to set since it is determined by earlier steps in the pipeline? --> hot to make earlier scripts set it?  trying to use 4dtsack version
+proj_in_dir="${csv_dir}/../clean/" # change back to version without pp
 proj_out_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
 proj_name="pp_tile_"
 # there is different variables for mincost proj because it cant handle hyperstacks
 min_proj_in_dir=""
 min_proj_in_name=""
 min_proj_out_dir=""
+rescale_xy="0.3"
+delta_z="1"
 
 
 
@@ -68,9 +70,9 @@ tiles_x="3"
 tiles_y="4"
 if [ ${proj_type} == "MAX" ]
 then
-  stitch_name_pattern="max_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
+  stitch_name_pattern="max_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
 elif [ ${proj_type} == "DPJ" ]; then
-  stitch_name_pattern="proj_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
+  stitch_name_pattern="proj_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
 else
   echo "invalid projection type"
   exit 1
@@ -135,22 +137,23 @@ fi
 # after the prediction, some image manipulation will be done
 # start as array
 # what to parse here? a lot of parameters could be specified] by the earlier pipeline
-mkdir ${csv_dir}/../preprocessed
-preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size})
-preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
+# uncommented since it performs worse
+#mkdir ${csv_dir}/../preprocessed
+#preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size} ${cl_slope})
+#preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
 
 # start the projection, can be parallelized for every single image if needed, otherwise for every tile?
 # start once preprocessing is done
 mkdir ${csv_dir}/../projected
 if [ ${proj_type} == "DPJ" ]
 then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "MAX" ]; then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir} ${proj_name})
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "MINCOST" ]; then
-  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_mincost_projection_mod.sh) ${min_proj_in_dir} ${min_proj_in_name} ${min_proj_out_dir}  ${rb_radius} ${cl_slope} ${rescale_xy} ${delta_z} # dependencies have to be figured out
+  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_mincost_projection_mod.sh) ${min_proj_in_dir} ${min_proj_in_name} ${min_proj_out_dir}  ${rb_radius} ${cl_slope} ${rescale_xy} ${delta_z} # dependencies have to be figured out
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 else
   echo "invalid projection type"
