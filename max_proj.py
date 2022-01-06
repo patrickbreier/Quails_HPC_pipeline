@@ -19,16 +19,16 @@ for root, dirs, files in os.walk(input_dir):
     for file in files:
         if regex.match(file):
             img_name = f"{input_dir}{file}"  # will this stay in the loop or can I use it?
-            file_name = f"{file}".rstrip('_N2V.tif')  # needed because no preprocessing
+            file_name = f"{file}".replace("_N2V.tif", ".tif")  # needed because no preprocessing
 
 img = io.imread(img_name)
 img_max = np.max(img, axis=-3)
 
 # use tiff writer to get proper hyperstack
 if len(img_max.shape) == 3:
-    OmeTiffWriter.save(img_max, f"{save_dir}max_{file_name}.tif", dim_order="TYX")
+    OmeTiffWriter.save(img_max, f"{save_dir}max_{file_name}", dim_order="TYX")
 elif len(img_max.shape) == 2:
-    OmeTiffWriter.save(img_max, f"{save_dir}max_{file_name}.tif", dim_order="YX")
+    OmeTiffWriter.save(img_max, f"{save_dir}max_{file_name}", dim_order="YX")
 else:
     print("image dimensions are not as expected")
     exit(1)
