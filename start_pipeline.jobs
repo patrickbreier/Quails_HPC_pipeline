@@ -26,6 +26,8 @@ prj="/projects/Quails/"
 ########################################################################################################################
 
 # all variables that have to be set before starting the pipeline
+movie_name="20211106_exp_"  # chose name for output
+
 # template_update
 number_of_tiles="12"
 number_of_timesteps="7"  # actually its number of timesteps-1 because there is a step 0
@@ -42,28 +44,20 @@ steps_per_epoch="5"  # 400 is default; doesn't matter if model is set
 
 # preprocessing
 # commented out for performance reasons
-#pp_in_dir="${csv_dir}/../clean/"
-#pp_out_dir="${csv_dir}/../preprocessed/"
-#pp_in_name="tile_"  # get this reported from finished job!
-#rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
-#block_size="15"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
-#cl_slope="3"
+pp_in_dir="${csv_dir}/../clean/"
+pp_out_dir="${csv_dir}/../preprocessed/"
+pp_in_name="tile_"  # get this reported from finished job!
+rb_radius="10"  # size of rolling ball kernel; should be set to at least the size of the largest object that is not part of the background
+block_size="15"  # the size of the local region around a pixel for which the histogram is equalized. This size should be larger than the size of features to be preserved
+cl_slope="3"
 
 
 # Projection
-proj_type="MAX" # MAX or DPJ
-path_to_proj_model="${prj}/DeepProjection_git/trained_networks/20211109_dorsal_closure.pth" # use this as long as there is no self_trained modelsqueue
-proj_in_dir="${csv_dir}/../clean/" # change back to version without pp
+proj_type="DPJ" # MAX or DPJ
+path_to_proj_model="${prj}/deepproj/second_network/model_best.pth" # use this as long as there is no self_trained modelsqueue
+proj_in_dir="${csv_dir}/../preprocessed/" # change back to version without pp
 proj_out_dir="${csv_dir}/../projected/" # doesnt have to set since it is determined by earlier steps in the pipeline?
-proj_name="pp_tile_"
-# there is different variables for mincost proj because it cant handle hyperstacks
-min_proj_in_dir=""
-min_proj_in_name=""
-min_proj_out_dir=""
-rescale_xy="0.3"
-delta_z="1"
-
-
+# proj_name="pp_tile_"# not necessery (regex)
 
 # Stitching
 tiles_x="3"
@@ -90,7 +84,7 @@ restore_dir="${csv_dir}/../stitched/timeseries/"
 
 # copying Fused_XXX.tif to Fused_XXX/original.png
 copy_dir="${csv_dir}/../stitched/timeseries/"  # this can be written as regex
-copy_name="Fused_"
+copy_name="${movie_name}"
 
 #cleanup
 cleanup_dir="${script_dir}"
@@ -99,8 +93,8 @@ cleanup_dir="${script_dir}"
 ############################################# Starting Jobs ############################################################
 
 # update all templates
-template_update=$(sbatch ${prj}/scripts/pipeline/start_template_update.sh ${number_of_tiles} ${number_of_timesteps} ${script_dir})
-template_update_job=$(echo "${template_update}" | awk '{ print $NF }')
+#template_update=$(sbatch ${prj}/scripts/pipeline/start_template_update.sh ${number_of_tiles} ${number_of_timesteps} ${script_dir})
+#template_update_job=$(echo "${template_update}" | awk '{ print $NF }')
 
 sleep 5s
 
@@ -108,7 +102,7 @@ sleep 5s
 # start image conversion (array)
 # potentially create a for loop that iterates over all tiles to process single/chucks of slices
 mkdir ${csv_dir}/../raw # create dir to save the data in a dir of same hierarchy as csv_dir
-image_conversion=$(sbatch --dependency=afterok:"${template_update_job}" ${prj}/scripts/pipeline/start_conversion_mod.sh ${csv_dir} ${csv_name})
+image_conversion=$(sbatch ${prj}/scripts/pipeline/start_conversion_mod.sh ${csv_dir} ${csv_name}) # include --dependency=afterok:"${template_update_job}"
 image_conversion_job=$(echo "${image_conversion}" | awk '{ print $NF }')
 
 # training for denoising starts only if needed, otherwise use existing model in specified directory
@@ -138,23 +132,23 @@ fi
 # start as array
 # what to parse here? a lot of parameters could be specified] by the earlier pipeline
 # uncommented since it performs worse
-#mkdir ${csv_dir}/../preprocessed
-#preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size} ${cl_slope})
-#preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
+mkdir ${csv_dir}/../preprocessed
+preprocessing=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_preprocessing_mod.sh ${pp_in_dir} ${pp_out_dir} ${pp_in_name} ${rb_radius} ${block_size} ${cl_slope})
+preprocessing_job=$(echo "${preprocessing}" | awk '{ print $NF }')
 
 # start the projection, can be parallelized for every single image if needed, otherwise for every tile?
 # start once preprocessing is done
 mkdir ${csv_dir}/../projected
 if [ ${proj_type} == "DPJ" ]
 then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir} ${proj_name})
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_projection_mod.sh ${path_to_proj_model} ${proj_in_dir} ${proj_out_dir})  # ${proj_name})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
 elif [ ${proj_type} == "MAX" ]; then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir})
+  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_max_mod.sh ${proj_in_dir} ${proj_out_dir})
   projection_job=$(echo "${projection}" | awk '{ print $NF }')
-elif [ ${proj_type} == "MINCOST" ]; then
-  projection=$(sbatch --dependency=afterok:"${prediction_N2V_job}" ${prj}/scripts/pipeline/start_mincost_projection_mod.sh) ${min_proj_in_dir} ${min_proj_in_name} ${min_proj_out_dir}  ${rb_radius} ${cl_slope} ${rescale_xy} ${delta_z} # dependencies have to be figured out
-  projection_job=$(echo "${projection}" | awk '{ print $NF }')
+#elif [ ${proj_type} == "MINCOST" ]; then
+#  projection=$(sbatch --dependency=afterok:"${preprocessing_job}" ${prj}/scripts/pipeline/start_mincost_projection_mod.sh) ${min_proj_in_dir} ${min_proj_in_name} ${min_proj_out_dir}  ${rb_radius} ${cl_slope} ${rescale_xy} ${delta_z} # dependencies have to be figured out
+#  projection_job=$(echo "${projection}" | awk '{ print $NF }')
 else
   echo "invalid projection type"
   exit 1

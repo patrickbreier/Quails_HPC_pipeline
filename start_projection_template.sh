@@ -5,7 +5,7 @@
 # Check what options you need here!
 #SBATCH --job-name="projection"
 #SBATCH --time=0-01:00:00
-#SBATCH --mem-per-cpu=60000
+#SBATCH --mem-per-cpu=6000
 #SBATCH --gres=gpu:1
 #SBATCH --partition=gpu
 #SBATCH --mail-user=pbreier@mpi-cbg.de
@@ -19,7 +19,7 @@
 path_to_model=${1}
 input_dir=${2}
 output_dir=${3}
-filename=${4}
+#filename=${4}
 
 
 # set environment and load modules
@@ -27,4 +27,4 @@ eval "$(conda shell.bash hook)"
 conda activate dpj
 module load cuda/11.2.2
 # start projection
-/projects/Quails/scripts/pipeline/do_deepprojection.py ${path_to_model} ${input_dir} ${output_dir} $(printf "%02d" $SLURM_ARRAY_TASK_ID) ${filename}
+/projects/Quails/scripts/pipeline/do_deepprojection.py ${path_to_model} ${input_dir} ${output_dir} $(printf "%02d" $SLURM_ARRAY_TASK_ID)  # ${filename}
