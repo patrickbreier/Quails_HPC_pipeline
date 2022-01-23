@@ -18,18 +18,18 @@ for root, dirs, files in os.walk(input_dir):
     for file in files:
         if regex.match(file):
             try:
-                file_name = f"{file}".replace("_N2V.tif", "_")  # needed because no preprocessing
-            except:
+                file_name = f"{file}".replace("_N2V.tif", ".tif")  # needed because no preprocessing
+            except:  # this seems to be  bad idea. figure out how to do this better
                 print("no N2V ending")
-                file_name = f"{file}_"
+                file_name = f"{file}"
                 print("filename: ", file_name)
 
 # movie method. make this work!
-temp_folder = "/projects/Quails/deepprojection/temp/"
-folder = f"{input_dir}{file_name}{file_number}.tif"
-output = f"{save_dir}/proj_{file_name}{file_number}.tif"
+temp_folder = f"/projects/Quails/deepprojection/temp_{file_number}/"
+folder = f"{input_dir}{file_name}"
+output = f"{save_dir}/proj_{file_name}"
 
-predict = dp.PredictMovie(folder, model=dp.ProjNet, weights=path_weights, resize_dim=(512, 512),
+predict = dp.PredictMovie(folder, model=dp.ProjNet, weights=path_weights, resize_dim=(256, 256),
                           clip_thrs=(0, 99.9), n_filter=8, mask_thrs=None, temp_folder=temp_folder,
                           normalization_mode='movie', export_masks=True, invert_slices=False,
                           filename_output=output)

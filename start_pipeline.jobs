@@ -26,7 +26,7 @@ prj="/projects/Quails/"
 ########################################################################################################################
 
 # all variables that have to be set before starting the pipeline
-movie_name="20211106_exp_"  # chose name for output
+#movie_name="20211106_exp_"  # chose name for output; not implemented yet
 
 # template_update
 number_of_tiles="12"
@@ -66,7 +66,7 @@ if [ ${proj_type} == "MAX" ]
 then
   stitch_name_pattern="max_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
 elif [ ${proj_type} == "DPJ" ]; then
-  stitch_name_pattern="proj_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
+  stitch_name_pattern="proj_pp_tile_{ii}.tif" # doesnt have to set since it is determined by earlier steps in the pipeline?
 else
   echo "invalid projection type"
   exit 1
@@ -84,7 +84,7 @@ restore_dir="${csv_dir}/../stitched/timeseries/"
 
 # copying Fused_XXX.tif to Fused_XXX/original.png
 copy_dir="${csv_dir}/../stitched/timeseries/"  # this can be written as regex
-copy_name="${movie_name}"
+copy_name="Fused_"
 
 #cleanup
 cleanup_dir="${script_dir}"
