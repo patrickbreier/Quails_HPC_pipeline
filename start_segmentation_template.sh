@@ -3,7 +3,7 @@
 # Check what options you need here!
 #SBATCH --job-name="EPySeg prediction"
 #SBATCH --time=0-00:30:00
-#SBATCH --mem-per-cpu=1000
+#SBATCH --mem-per-cpu=3000
 #SBATCH --gres=gpu:1
 #SBATCH --partition=gpu
 #SBATCH --mail-user=pbreier@mpi-cbg.de

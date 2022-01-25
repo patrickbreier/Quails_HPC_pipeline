@@ -5,7 +5,7 @@
 #SBATCH --error=/projects/Quails/scripts/errors/slurm-stitching_%j.err
 #SBATCH --job-name=stitching
 #SBATCH --time=0-01:00:00
-#SBATCH --mem-per-cpu=20000
+#SBATCH --mem-per-cpu=30000
 
 input_dir=${1}
 output_dir=${2}

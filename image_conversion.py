@@ -14,5 +14,6 @@ filepath = sys.argv[1]
 filename = sys.argv[2]
 image_number = sys.argv[3]
 
+print(f"{filepath}{filename}{image_number}.vsi")
 # import vsi image and save as tiff in different folder
 AICSImage(f"{filepath}{filename}{image_number}.vsi").save(f"{filepath}/../raw/tile_{image_number}.tif")

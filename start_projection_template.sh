@@ -5,7 +5,7 @@
 # Check what options you need here!
 #SBATCH --job-name="projection"
 #SBATCH --time=0-01:00:00
-#SBATCH --mem-per-cpu=6000
+#SBATCH --mem-per-cpu=30000
 #SBATCH --gres=gpu:1
 #SBATCH --partition=gpu
 #SBATCH --mail-user=pbreier@mpi-cbg.de

@@ -5,7 +5,7 @@
 #SBATCH --error=/projects/Quails/scripts/errors/slurm-copy_png-%A_%a.err
 #SBATCH --job-name=copy_png-%A_%a
 #SBATCH --time=0-02:00:00
-#SBATCH --mem-per-cpu=600
+#SBATCH --mem-per-cpu=500
 #SBATCH --array=0-==timesteps==  # will be modified by update_templates.py
 
 # get filepath, filename, number of files from console input
